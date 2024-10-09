@@ -81,7 +81,17 @@ int
 sys_pgaccess(void)
 {
   // lab pgtbl: your code here.
-  return 0;
+  struct proc *p = myproc();
+  uint64 buf;
+  int pagenum;
+  uint64 abits;
+  if(  argaddr(0, &buf) < 0
+    || argint(1, &pagenum) < 0
+    || argaddr(2, &abits) < 0){
+    return -1;
+  }
+
+  return pgaccess(p->pagetable, buf, pagenum, abits);
 }
 #endif
 

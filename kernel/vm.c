@@ -116,6 +116,8 @@ walkaddr(pagetable_t pagetable, uint64 va)
     return 0;
   if((*pte & PTE_U) == 0)
     return 0;
+
+  *pte |=  PTE_A;
   pa = PTE2PA(*pte);
   return pa;
 }
@@ -431,4 +433,26 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+int
+pgaccess(pagetable_t pagetable, uint64 buf, int pagenum, uint64 abits)
+{
+  int bits = 0;
+  uint64 temp_buf = buf;
+  for(int i = 0; i < pagenum; i++){
+    pte_t* pte = walk(pagetable, temp_buf, 0);
+    if(!pte)
+      return -1;
+    if (*pte & PTE_A){
+      bits |= (1 << i);
+      *pte ^= PTE_A;
+    }
+    temp_buf += PGSIZE;
+  }
+
+  if(copyout(pagetable, abits, (char *)&bits, sizeof(bits)) < 0)
+    return -1;
+
+  return 0;
 }
