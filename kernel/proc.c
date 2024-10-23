@@ -120,8 +120,20 @@ found:
   p->pid = allocpid();
   p->state = USED;
 
+  p->tick = 0;
+  p->interval = 0;
+  p->handler = 0;
+  p->reentrant = 0;
+
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+
+  // Allocate a sigframe page.
+  if((p->sigframe = (struct sigframe *)kalloc()) == 0){
     freeproc(p);
     release(&p->lock);
     return 0;
@@ -153,6 +165,9 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+  if(p->sigframe)
+    kfree((void*)p->sigframe);
+  p->sigframe = 0;
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
   p->pagetable = 0;
@@ -164,6 +179,10 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  p->tick = 0;
+  p->interval = 0;
+  p->handler = 0;
+  p->reentrant = 0;
 }
 
 // Create a user page table for a given process,
@@ -291,6 +310,9 @@ fork(void)
 
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
+
+  // copy saved user registers.
+  *(np->sigframe) = *(p->sigframe);
 
   // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;

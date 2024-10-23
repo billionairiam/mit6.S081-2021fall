@@ -65,8 +65,50 @@ usertrap(void)
     intr_on();
 
     syscall();
-  } else if((which_dev = devintr()) != 0){
+  }else if((which_dev = devintr()) != 0){
     // ok
+    if(which_dev == 2 && p->interval > 0 && p->reentrant == 0){
+      if(ticks - p->tick >= p->interval) {
+        p->sigframe->a0 = p->trapframe->a0;
+        p->sigframe->a1 = p->trapframe->a1;
+        p->sigframe->a2 = p->trapframe->a2;
+        p->sigframe->a3 = p->trapframe->a3;
+        p->sigframe->a4 = p->trapframe->a4;
+        p->sigframe->a5 = p->trapframe->a5;
+        p->sigframe->a6 = p->trapframe->a6;
+        p->sigframe->a7 = p->trapframe->a7;
+        p->sigframe->epc = p->trapframe->epc;
+        p->sigframe->gp = p->trapframe->gp;
+        p->sigframe->kernel_hartid = p->trapframe->kernel_hartid;
+        p->sigframe->kernel_satp = p->trapframe->kernel_satp;
+        p->sigframe->kernel_trap = p->trapframe->kernel_trap;
+        p->sigframe->ra = p->trapframe->ra;
+        p->sigframe->s0 = p->trapframe->s0;
+        p->sigframe->s10 = p->trapframe->s10;
+        p->sigframe->s11 = p->trapframe->s11;
+        p->sigframe->s1 = p->trapframe->s1;
+        p->sigframe->s2 = p->trapframe->s2;
+        p->sigframe->s3 = p->trapframe->s3;
+        p->sigframe->s4 = p->trapframe->s4;
+        p->sigframe->s5 = p->trapframe->s5;
+        p->sigframe->s6 = p->trapframe->s6;
+        p->sigframe->s7 = p->trapframe->s7;
+        p->sigframe->s8 = p->trapframe->s8;
+        p->sigframe->s9 = p->trapframe->s9;
+        p->sigframe->sp = p->trapframe->sp;
+        p->sigframe->t1 = p->trapframe->t1;
+        p->sigframe->t2 = p->trapframe->t2;
+        p->sigframe->t3 = p->trapframe->t3;
+        p->sigframe->t4 = p->trapframe->t4;
+        p->sigframe->t5 = p->trapframe->t5;
+        p->sigframe->t6 = p->trapframe->t6;
+        p->sigframe->tp = p->trapframe->tp;
+
+        p->trapframe->epc = p->handler;
+        p->tick = ticks;
+        p->reentrant = 1;
+      }
+    }
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
